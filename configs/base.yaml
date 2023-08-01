@@ -1,0 +1,51 @@
+model:
+  name: mul_resnet18
+  path: checkpoints
+  load_from_checkpoint: False
+  checkpoint_name: checkpoint_latest.pth
+  use_gpu: true
+  pretrained: True
+  feat:
+    backbone: resnet18
+    freq_branch_enabled: True
+    freq_filter: [0.2, 0.4, 0.6, 0.8]    # use all thresholds and stack the frequency map
+    noise_branch_enabled: True
+    fusion_out_channels : 256
+  head_cls: 6
+
+train:
+  dataset:
+    data_root: 'E:\data\synthesized_database'
+    batch_size: 1
+    split: [0.7, 0.2, 0.1]    # split ratio for train, val, test
+  data_transforms:
+    crop: 224
+    crop_enabled: True
+    flip_enabled: True
+    normalize:
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+    normalize_enabled: True
+    post_processing:
+      gaussian:
+        prob: 2.
+        sigma: 0.25
+      gaussian_enabled: True
+      jpeg:
+        prob: 2.
+        quality: [70, 75, 80, 85, 90, 95]    # random choose a quality
+      jpeg_enabled: True
+    post_processing_enabled: True
+    resize: 256
+    resize_enabled: True
+  hyperparameter:
+    early_stop: 5
+    early_stop_enabled: False
+    learning_rate: 0.002
+    weight_decay: 0
+  epoch: 100
+  save_step: 5
+  save_dir: output
+  save_name: mul_resnet18
+  seed: 1
+  log_step: 1
