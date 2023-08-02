@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 
+from .identity import Identity
 from utils.utils import init_layer
 class FusionNeck(nn.Module):
     def __init__(self, config):
@@ -13,13 +14,16 @@ class FusionNeck(nn.Module):
             self.feat_in_branches += 1
         self.feat_in_channels = 512 * self.feat_in_branches
         self.fusion_out_channels = config.model.feat.fusion_out_channels
+        # self.fusion_layer = nn.Sequential(
+        #     nn.Conv2d(self.feat_in_channels, 512, kernel_size=1, stride=1, padding=0),
+        #     nn.BatchNorm2d(512),
+        #     nn.ReLU(),
+        #     nn.Conv2d(512, self.fusion_out_channels, kernel_size=1, stride=1, padding=0),
+        #     nn.BatchNorm2d(self.fusion_out_channels),
+        #     nn.ReLU()
+        # )
         self.fusion_layer = nn.Sequential(
-            nn.Conv2d(self.feat_in_channels, 512, kernel_size=1, stride=1, padding=0),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-            nn.Conv2d(512, self.fusion_out_channels, kernel_size=1, stride=1, padding=0),
-            nn.BatchNorm2d(self.fusion_out_channels),
-            nn.ReLU()
+            Identity()
         )
         self.avg_pool2d = nn.AdaptiveAvgPool2d((1, 1))
 

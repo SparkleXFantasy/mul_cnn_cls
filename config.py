@@ -29,6 +29,7 @@ class BaseConfig:
         self.__C.model.feat.noise_branch_enabled = True
         self.__C.model.feat.fusion_out_channels = 256
         self.__C.model.head_cls = 6
+
         self.__C.train = CN()
         self.__C.train.dataset = CN()
         self.__C.train.dataset.data_root = 'data'
@@ -60,8 +61,37 @@ class BaseConfig:
         self.__C.train.hyperparameter.early_stop_enabled = False
         self.__C.train.hyperparameter.learning_rate = 0.001
         self.__C.train.hyperparameter.weight_decay = 0
+        self.__C.train.metrics = ['AUC', 'F1']
         self.__C.train.save_step = 5
         self.__C.train.save_dir = 'output'
         self.__C.train.save_name = 'mul_resnet50'
         self.__C.train.seed = 1
         self.__C.train.log_step = 1
+
+        self.__C.test = CN()
+        self.__C.test.dataset = CN()
+        self.__C.test.dataset.data_root = 'data'
+        self.__C.test.dataset.batch_size = 1
+        self.__C.test.data_transforms = CN()
+        self.__C.test.data_transforms.crop = 224
+        self.__C.test.data_transforms.crop_enabled = True
+        self.__C.test.data_transforms.flip_enabled = True
+        self.__C.test.data_transforms.normalize = CN()
+        self.__C.test.data_transforms.normalize.mean = [0.485, 0.456, 0.406]
+        self.__C.test.data_transforms.normalize.std = [0.229, 0.224, 0.225]
+        self.__C.test.data_transforms.normalize_enabled = True
+        self.__C.test.data_transforms.post_processing = CN()
+        self.__C.test.data_transforms.post_processing.gaussian = CN()
+        self.__C.test.data_transforms.post_processing.gaussian.prob = 0.5
+        self.__C.test.data_transforms.post_processing.gaussian.sigma = 0.25
+        self.__C.test.data_transforms.post_processing.gaussian_enabled = True
+        self.__C.test.data_transforms.post_processing.jpeg = CN()
+        self.__C.test.data_transforms.post_processing.jpeg.prob = 0.5
+        self.__C.test.data_transforms.post_processing.jpeg.quality = [70, 75, 80, 85, 90, 95]
+        self.__C.test.data_transforms.post_processing.jpeg_enabled = True
+        self.__C.test.data_transforms.post_processing_enabled = True
+        self.__C.test.data_transforms.resize = 256
+        self.__C.test.data_transforms.resize_enabled = True
+        self.__C.test.metrics = ['AUC', 'F1']
+        self.__C.test.save_dir = 'output'
+        self.__C.test.seed = 1

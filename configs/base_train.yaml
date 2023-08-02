@@ -10,13 +10,13 @@ model:
     freq_branch_enabled: True
     freq_filter: [0.2, 0.4, 0.6, 0.8]    # use all thresholds and stack the frequency map
     noise_branch_enabled: True
-    fusion_out_channels : 256
+    fusion_out_channels : 1536
   head_cls: 6
 
 train:
   dataset:
     data_root: 'E:\data\synthesized_database'
-    batch_size: 1
+    batch_size: 8
     split: [0.7, 0.2, 0.1]    # split ratio for train, val, test
   data_transforms:
     crop: 224
@@ -44,6 +44,7 @@ train:
     learning_rate: 0.002
     weight_decay: 0
   epoch: 100
+  metrics: [ACC, AUC, F1, mAP]
   save_step: 5
   save_dir: output
   save_name: mul_resnet18

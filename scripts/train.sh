@@ -1,1 +1,1 @@
-python train.py --config 'configs/base.yaml'
+python train.py --config 'configs/base_train.yaml'
