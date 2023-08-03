@@ -3,7 +3,7 @@ model:
   path: checkpoints
   load_from_checkpoint: False
   checkpoint_name: checkpoint_latest.pth
-  use_gpu: true
+  use_gpu: True
   pretrained: True
   feat:
     backbone: resnet18
@@ -11,11 +11,11 @@ model:
     freq_filter: [0.2, 0.4, 0.6, 0.8]    # use all thresholds and stack the frequency map
     noise_branch_enabled: True
     fusion_out_channels : 1536
-  head_cls: 6
+  head_cls: 2
 
 train:
   dataset:
-    data_root: 'E:\data\synthesized_database'
+    data_root: '/home/sxf/data/synthesized_binary_dataset'
     batch_size: 8
     split: [0.7, 0.2, 0.1]    # split ratio for train, val, test
   data_transforms:
@@ -28,12 +28,12 @@ train:
     normalize_enabled: True
     post_processing:
       gaussian:
-        prob: 2.
-        sigma: 0.25
+        prob: 0.5
+        sigma: 0.1
       gaussian_enabled: True
       jpeg:
-        prob: 2.
-        quality: [70, 75, 80, 85, 90, 95]    # random choose a quality
+        prob: 0.5
+        quality: [90, 95]    # random choose a quality
       jpeg_enabled: True
     post_processing_enabled: True
     resize: 256

@@ -17,6 +17,7 @@ from dataset import FolderDataset
 from network.base_model import BaseModel
 from utils.earlystop import EarlyStopping
 from utils.img_processing import img_post_processing, denormalize_batch_t
+from utils.metrics import eval_metrics
 from utils.utils import set_random_seed
 
 def parse_args():
@@ -50,20 +51,6 @@ def img_trans(config):
     if data_config.normalize_enabled:
         trans.append(transforms.Normalize(mean=data_config.normalize.mean, std=data_config.normalize.std))
     return trans
-
-
-def eval_metrics(config, data):
-    metrics = config.test.metrics
-    result = dict()
-    scores, labels = data
-    pred_cls = np.argmax(scores, axis=1)
-    if 'AUC' in metrics:
-        auc = roc_auc_score(labels, scores, multi_class='ovr')
-        result['AUC'] = auc
-    if 'F1' in metrics:
-        f1 = f1_score(labels, pred_cls, average='macro')
-        result['F1'] = f1
-    return result
 
 
 if __name__ == '__main__':
@@ -112,7 +99,7 @@ if __name__ == '__main__':
         # test_writer.add_scalar('loss', test_loss / test_num)
         probs = probs.cpu().detach()
         labels = labels.cpu().detach()
-    result = eval_metrics(config, (probs.numpy(), labels.numpy()))
+    result = eval_metrics(config.test.metrics, (probs.numpy(), labels.numpy()))
 
     with open(os.path.join(output_dir, 'logs', log_file), 'w') as log:
         log.write('Evaluation Metrics\n')

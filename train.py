@@ -8,15 +8,16 @@ from datetime import datetime
 from sklearn.metrics import accuracy_score, average_precision_score, precision_score, f1_score, recall_score, roc_auc_score
 from tensorboardX import SummaryWriter
 from torch import nn
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 from torchvision import transforms
 from tqdm import tqdm
 
 from config import BaseConfig
-from dataset import FolderDataset
+from dataset import FolderDataset, random_split_dataset
 from network.base_model import BaseModel
 from utils.earlystop import EarlyStopping
 from utils.img_processing import img_post_processing, denormalize_batch_t
+from utils.metrics import eval_metrics
 from utils.utils import set_random_seed
 
 
@@ -53,20 +54,6 @@ def img_trans(config):
     return trans
 
 
-def eval_metrics(config, data):
-    metrics = config.test.metrics
-    result = dict()
-    scores, labels = data
-    pred_cls = np.argmax(scores, axis=1)
-    if 'AUC' in metrics:
-        auc = roc_auc_score(labels, scores, multi_class='ovr')
-        result['AUC'] = auc
-    if 'F1' in metrics:
-        f1 = f1_score(labels, pred_cls, average='macro')
-        result['F1'] = f1
-    return result
-
-
 if __name__ == '__main__':
     parser = parse_args()
     config = BaseConfig(parser.config).cfg()
@@ -85,13 +72,10 @@ if __name__ == '__main__':
 
     data_trans = transforms.Compose(img_trans(config))
     synthesized_dataset = FolderDataset(config.train.dataset.data_root, transform=data_trans)
-    split_lengths = [int(len(synthesized_dataset) * config.train.dataset.split[i]) for i in range(2)]
-    split_lengths.append(len(synthesized_dataset) - sum(split_lengths))
-    train_dataset, val_dataset, test_dataset = random_split(dataset=synthesized_dataset, lengths=split_lengths)
+    train_dataset, val_dataset, test_dataset = random_split_dataset(synthesized_dataset, config.train.dataset.split)
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=config.train.dataset.batch_size, shuffle=True, drop_last=True)
     test_dataloader = DataLoader(dataset=test_dataset, batch_size=1, shuffle=False, drop_last=False)
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=1, shuffle=False, drop_last=False)
-
     device = 'cuda' if config.model.use_gpu else 'cpu'
 
     model = BaseModel(config)
@@ -126,7 +110,7 @@ if __name__ == '__main__':
                 train_pbar.update(data_batch)
             train_probs = train_probs.cpu().detach()
             train_labels = train_labels.cpu().detach()
-        train_metrics = eval_metrics(config, (train_probs.numpy(), train_labels.numpy()))
+        train_metrics = eval_metrics(config.train.metrics, (train_probs.numpy(), train_labels.numpy()))
         print('Training Loss: {}.'.format(train_loss / train_num))
 
         val_probs, val_labels = torch.tensor([]).to(torch.device(device)), torch.tensor([]).to(torch.device(device))
@@ -148,7 +132,7 @@ if __name__ == '__main__':
                 val_pbar.update(data_batch)
             val_probs = val_probs.cpu().detach()
             val_labels = val_labels.cpu().detach()
-        val_metrics = eval_metrics(config, (val_probs.numpy(), val_labels.numpy()))
+        val_metrics = eval_metrics(config.train.metrics, (val_probs.numpy(), val_labels.numpy()))
         print('Validation Loss: {}.'.format(val_loss / val_num))
 
         if early_stop_enabled:
@@ -190,7 +174,7 @@ if __name__ == '__main__':
                     test_pbar.update(data_batch)
                 test_probs = test_probs.cpu().detach()
                 test_labels = test_labels.cpu().detach()
-            test_metrics = eval_metrics(config, (test_probs.numpy(), test_labels.numpy()))
+            test_metrics = eval_metrics(config.train.metrics, (test_probs.numpy(), test_labels.numpy()))
             test_writer.add_scalar('loss', test_loss / test_num, global_step=epoch)
             print('Testing Metrics')
             for k, v in test_metrics.items():

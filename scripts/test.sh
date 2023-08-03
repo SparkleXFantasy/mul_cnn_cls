@@ -1,0 +1,1 @@
+python test.py --config 'configs/base_test.yaml'

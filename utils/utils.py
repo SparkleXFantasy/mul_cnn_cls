@@ -4,7 +4,6 @@ import random
 import torch
 from torch import nn
 
-
 def cls2one_hot(cls, shape):
     try:
         assert(len(shape) == 2)
@@ -35,3 +34,4 @@ def set_random_seed(seed_value):
     torch.cuda.manual_seed(seed_value)
     torch.cuda.manual_seed_all(seed_value)
     torch.backends.cudnn.deterministic = True
+
