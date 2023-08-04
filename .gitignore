@@ -1,6 +1,7 @@
 /.idea/
 /checkpoints/
 /output/
+/configs/
 code_test.py
 
 # Byte-compiled / optimized / DLL files

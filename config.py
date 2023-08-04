@@ -50,7 +50,7 @@ class BaseConfig:
         self.__C.train.data_transforms.post_processing.gaussian_enabled = True
         self.__C.train.data_transforms.post_processing.jpeg = CN()
         self.__C.train.data_transforms.post_processing.jpeg.prob = 0.5
-        self.__C.train.data_transforms.post_processing.jpeg.quality = [70, 75, 80, 85, 90, 95]
+        self.__C.train.data_transforms.post_processing.jpeg.quality = [90, 95]
         self.__C.train.data_transforms.post_processing.jpeg_enabled = True
         self.__C.train.data_transforms.post_processing_enabled = True
         self.__C.train.data_transforms.resize = 256
@@ -87,7 +87,7 @@ class BaseConfig:
         self.__C.test.data_transforms.post_processing.gaussian_enabled = True
         self.__C.test.data_transforms.post_processing.jpeg = CN()
         self.__C.test.data_transforms.post_processing.jpeg.prob = 0.5
-        self.__C.test.data_transforms.post_processing.jpeg.quality = [70, 75, 80, 85, 90, 95]
+        self.__C.test.data_transforms.post_processing.jpeg.quality = [90, 95]
         self.__C.test.data_transforms.post_processing.jpeg_enabled = True
         self.__C.test.data_transforms.post_processing_enabled = True
         self.__C.test.data_transforms.resize = 256
