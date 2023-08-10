@@ -54,8 +54,8 @@ def img_trans(config):
 
 
 if __name__ == '__main__':
-    parser = parse_args()
-    config = BaseConfig(parser.config).cfg()
+    args = parse_args()
+    config = BaseConfig(args.config).cfg()
     print(config)
 
     set_random_seed(config.test.seed)

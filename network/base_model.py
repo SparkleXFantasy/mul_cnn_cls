@@ -1,5 +1,6 @@
 import torch
 from torch import nn, optim
+from torch.nn import functional as F
 
 from .mul_feat import MulFeat
 from .fusion_neck import FusionNeck
@@ -80,7 +81,7 @@ class BaseModel:
     def forward(self, img_t):
         """
         :param img_t: [B, C, H, W]
-        :return: pred_prob [B, self.head_cls]
+        :return: pred [B, self.head_cls]
         """
         feat = self.feat_backbone(img_t)
         fusion_feat = self.fusion_neck(feat)
@@ -96,3 +97,12 @@ class BaseModel:
         self.feat_backbone.eval()
         self.fusion_neck.eval()
         self.head.eval()
+
+    def get_cam_heatmap(self, img_t, cls_t):
+        feat = self.feat_backbone(img_t)
+        feat = torch.cat(feat, dim=1)
+        fusion_featmap = self.fusion_neck.fusion_layer(feat)
+        fc_weight = self.head.weight.data
+        cls_weight = fc_weight[cls_t, :]
+        cam_heatmap = (cls_weight.unsqueeze(-1).unsqueeze(-1) * fusion_featmap)    # broadcast the weight
+        return cam_heatmap

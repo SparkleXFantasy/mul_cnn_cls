@@ -110,7 +110,6 @@ if __name__ == '__main__':
         work_directory = opt.directory
         files = os.listdir(work_directory)
         freq_imgs = None
-        id = 0
         for file in tqdm(files):
             img = np.array(Image.open(os.path.join(work_directory, file)).convert('L'))
             result = img_processing(img, opt, file)
