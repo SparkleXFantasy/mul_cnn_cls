@@ -13,6 +13,7 @@ def parse_args():
     parser.add_argument('-m', '--method', type=str, default='fft', help='the method for visualization')
     parser.add_argument('-o', '--output', type=str, default='output', help='the output directory')
     parser.add_argument('-r', '--radius', nargs='*', type=float, help='radius threshold for low and high pass filter')
+    parser.add_argument('--resize', type=int, help='whether resize the input')
     return parser.parse_args()
 
 
@@ -109,9 +110,14 @@ if __name__ == '__main__':
     if opt.directory:
         work_directory = opt.directory
         files = os.listdir(work_directory)
+        supported = ['.png', '.PNG', '.jpg', '.jpeg', '.JPG', '.JPEG', '.tif', '.tiff', '.webp']
         freq_imgs = None
         for file in tqdm(files):
+            if os.path.splitext(file)[-1] not in supported:
+                continue
             img = np.array(Image.open(os.path.join(work_directory, file)).convert('L'))
+            if opt.resize:
+                img.resize((opt.resize, opt.resize))
             result = img_processing(img, opt, file)
             if freq_imgs is None:
                 freq_imgs = np.expand_dims(result['freq_hpf'], axis=0)
