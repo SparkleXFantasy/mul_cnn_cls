@@ -3,7 +3,7 @@ import os
 import sys
 import numpy as np
 from matplotlib import pyplot as plt
-from PIL import Image
+from PIL import Image, ImageFilter
 from tqdm import tqdm
 
 def parse_args():
@@ -14,7 +14,14 @@ def parse_args():
     parser.add_argument('-o', '--output', type=str, default='output', help='the output directory')
     parser.add_argument('-r', '--radius', nargs='*', type=float, help='radius threshold for low and high pass filter')
     parser.add_argument('--resize', type=int, help='whether resize the input')
+    parser.add_argument('--constraint', type=str, help='frequency pass filter for signal constraint, in [hard, gaussian]')
     return parser.parse_args()
+
+
+def img_constraint(img, constraint):
+    if constraint == 'gaussian':
+        img = img.filter(ImageFilter.GaussianBlur(radius=5))
+    return img
 
 
 def generate_pass_filter(size, radius):    # size: (h, w)
@@ -115,10 +122,14 @@ if __name__ == '__main__':
         for file in tqdm(files):
             if os.path.splitext(file)[-1] not in supported:
                 continue
-            img = np.array(Image.open(os.path.join(work_directory, file)).convert('L'))
+            img = Image.open(os.path.join(work_directory, file)).convert('L')
             if opt.resize:
-                img.resize((opt.resize, opt.resize))
-            result = img_processing(img, opt, file)
+                img = img.resize((opt.resize, opt.resize))
+            img_arr = np.array(img)
+            if opt.constraint:
+                constrained_img = img_constraint(img, opt.constraint)
+                img_arr -= np.array(constrained_img)
+            result = img_processing(img_arr, opt, file)
             if freq_imgs is None:
                 freq_imgs = np.expand_dims(result['freq_hpf'], axis=0)
             else:
