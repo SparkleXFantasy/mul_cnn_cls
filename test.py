@@ -23,6 +23,7 @@ from utils.utils import set_random_seed
 def parse_args():
     parser = argparse.ArgumentParser(description='Test Argument Parser.')
     parser.add_argument('--config', type=str, default='configs/base_test.yaml', help='Configuration for Testing.')
+    parser.add_argument('--debug', actio='store_true', help='Debug mode.')
     return parser.parse_args()
 
 
@@ -90,7 +91,7 @@ if __name__ == '__main__':
             img_t, cls = data
             data_batch = cls.shape[0]
             img_t, cls = img_t.to(torch.device(device)), cls.to(torch.device(device))
-            output, losses = model.test_batch((img_t, cls))
+            output = model.test_batch((img_t, cls))
             pred = output
             prob = F.softmax(pred, dim=1)
             probs = torch.cat([probs, prob], dim=0)

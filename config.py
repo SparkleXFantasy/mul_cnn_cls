@@ -57,7 +57,10 @@ class BaseConfig:
         self.__C.train.data_transforms.resize_enabled = True
         self.__C.train.epoch = 100
         self.__C.train.hyperparameter = CN()
+        self.__C.train.hyperparameter.contrastive_loss = 0.01
+        self.__C.train.hyperparameter.contrastive_loss_enabled = False
         self.__C.train.hyperparameter.early_stop = 5
+        self.__C.train.hyperparameter.early_stop_metric = 'AUC'
         self.__C.train.hyperparameter.early_stop_enabled = False
         self.__C.train.hyperparameter.learning_rate = 0.001
         self.__C.train.hyperparameter.weight_decay = 0

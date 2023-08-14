@@ -24,6 +24,7 @@ from utils.utils import set_random_seed
 def parse_args():
     parser = argparse.ArgumentParser(description='Train Argument Parser.')
     parser.add_argument('--config', type=str, default='configs/base_train.yaml', help='Configuration for Training.')
+    parser.add_argument('--debug', action='store_true', help='Debug mode.')
     return parser.parse_args()
 
 
@@ -86,15 +87,25 @@ if __name__ == '__main__':
 
     early_stop = EarlyStopping(config.train.hyperparameter.early_stop, delta=0.001, verbose=True)
     early_stop_enabled = config.train.hyperparameter.early_stop_enabled
+    early_stop_metric = config.train.hyperparameter.early_stop_metric
+    if early_stop_enabled:
+        try:
+            assert(early_stop_metric in config.train.metrics)
+        except:
+            print('Early stop metric not found in training metrics. Please add to metrics for evaluation.')
+            exit(0)
 
+    contrastive_loss_enabled = config.train.hyperparameter.contrastive_loss_enabled
     for epoch in range(config.train.epoch):
-        train_loss, train_num = 0, 0
-        val_loss, val_num = 0, 0
-
+        train_loss, contra_loss, train_num = 0, 0, 0
         train_probs, train_labels = torch.tensor([]).to(torch.device(device)), torch.tensor([]).to(torch.device(device))
+        contra_pair = None
         with tqdm(total=len(train_dataset)) as train_pbar:
             train_pbar.set_description('Training Data Processing')
             for id, data in enumerate(train_dataloader):
+                if args.debug:
+                    if id > 20:
+                        break
                 img_t, cls = data
                 data_batch = cls.shape[0]
                 train_num += data_batch
@@ -102,48 +113,58 @@ if __name__ == '__main__':
                     img_t = img_t.to(torch.device(device))
                     cls = cls.to(torch.device(device))
                 output, losses = model.train_batch((img_t, cls))
+                if contrastive_loss_enabled:
+                    if contra_pair is None:
+                        contra_pair = img_t, cls
+                    else:
+                        pair_contra_loss = model.train_contra_pair([contra_pair, (img_t, cls)])
+                        contra_pair = None
+                        contra_loss += pair_contra_loss * data_batch
                 pred = output
                 prob = F.softmax(pred, dim=1)
                 train_probs = torch.cat([train_probs, prob], dim=0)
                 train_labels = torch.cat([train_labels, cls], dim=0)
-                train_loss += losses['TotalLoss'] * data_batch
+                train_loss += losses['total_loss'] * data_batch
                 train_pbar.update(data_batch)
             train_probs = train_probs.cpu().detach()
             train_labels = train_labels.cpu().detach()
         train_metrics = eval_metrics(config.train.metrics, (train_probs.numpy(), train_labels.numpy()))
         print('Training Loss: {}.'.format(train_loss / train_num))
+        if contrastive_loss_enabled:
+            print('Contrastive Loss: {}.'.format(contra_loss / train_num))
 
         val_probs, val_labels = torch.tensor([]).to(torch.device(device)), torch.tensor([]).to(torch.device(device))
         with tqdm(total=len(val_dataset)) as val_pbar:
             val_pbar.set_description('Validation Data Processing')
             for id, data in enumerate(val_dataloader):
+                if args.debug:
+                    if id > 20:
+                        break
                 img_t, cls = data
                 data_batch = cls.shape[0]
-                val_num += data_batch
                 if config.model.use_gpu:
                     img_t = img_t.to(torch.device(device))
                     cls = cls.to(torch.device(device))
-                output, losses = model.test_batch((img_t, cls))
+                output = model.test_batch((img_t, cls))
                 pred = output
                 prob = F.softmax(pred, dim=1)
                 val_probs = torch.cat([val_probs, prob], dim=0)
                 val_labels = torch.cat([val_labels, cls], dim=0)
-                val_loss += losses['TotalLoss'] * data_batch
                 val_pbar.update(data_batch)
             val_probs = val_probs.cpu().detach()
             val_labels = val_labels.cpu().detach()
         val_metrics = eval_metrics(config.train.metrics, (val_probs.numpy(), val_labels.numpy()))
-        print('Validation Loss: {}.'.format(val_loss / val_num))
 
         if early_stop_enabled:
-            early_stop(-val_loss, model, os.path.join(output_dir, 'models', '{}_best.pth'.format(config.train.save_name)))
+            early_stop(val_metrics[early_stop_metric], model, os.path.join(output_dir, 'models', '{}_best.pth'.format(config.train.save_name)))
 
         if (epoch + 1) % config.train.save_step == 0:
             model.save_model_state_dict(os.path.join(output_dir, 'models', '{}_{}.pth'.format(config.train.save_name, epoch)))
 
         if (epoch + 1) % config.train.log_step == 0 or early_stop.early_stop:
             train_writer.add_scalar('loss', train_loss / train_num, global_step=epoch)
-            val_writer.add_scalar('loss', val_loss / val_num, global_step=epoch)
+            if contrastive_loss_enabled:
+                train_writer.add_scalar('contrastive loss', contra_loss / train_num, global_step=epoch)
             print('Training Metrics')
             for k, v in train_metrics.items():
                 train_writer.add_scalar(k, v, global_step=epoch)
@@ -153,34 +174,32 @@ if __name__ == '__main__':
                 val_writer.add_scalar(k, v, global_step=epoch)
                 print('{}: {}'.format(k, v))
 
-            test_loss, test_num = 0, 0
             test_probs, test_labels = torch.tensor([]).to(torch.device(device)), torch.tensor([]).to(
                 torch.device(device))
             with tqdm(total=len(test_dataset)) as test_pbar:
                 test_pbar.set_description('Test Dataset Processing')
                 for id, data in enumerate(test_dataloader):
+                    if args.debug:
+                        if id > 20:
+                            break
                     img_t, cls = data
                     data_batch = cls.shape[0]
-                    test_num += data_batch
                     if config.model.use_gpu:
                         img_t = img_t.to(torch.device(device))
                         cls = cls.to(torch.device(device))
-                    output, losses = model.test_batch((img_t, cls))
+                    output = model.test_batch((img_t, cls))
                     pred = output
                     prob = F.softmax(pred, dim=1)
                     test_probs = torch.cat([test_probs, prob], dim=0)
                     test_labels = torch.cat([test_labels, cls], dim=0)
-                    test_loss += losses['TotalLoss'] * data_batch
                     test_pbar.update(data_batch)
                 test_probs = test_probs.cpu().detach()
                 test_labels = test_labels.cpu().detach()
             test_metrics = eval_metrics(config.train.metrics, (test_probs.numpy(), test_labels.numpy()))
-            test_writer.add_scalar('loss', test_loss / test_num, global_step=epoch)
             print('Testing Metrics')
             for k, v in test_metrics.items():
                 test_writer.add_scalar(k, v, global_step=epoch)
                 print('{}: {}'.format(k, v))
-            print('Test Loss: {}.'.format(test_loss / test_num))
 
         print('Epoch: {0} / {1}.'.format(epoch, config.train.epoch))
 
